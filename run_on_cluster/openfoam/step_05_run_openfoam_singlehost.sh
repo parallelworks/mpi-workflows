@@ -21,12 +21,13 @@
 #=======================
 
 # LOAD OpenMPI ENVIRONMENT HERE!
-source $HOME/parsl_mpi/run_on_cluster/openfoam/main_env.sh
+source $HOME/mpi-workflows/run_on_cluster/openfoam/main_env.sh
 
 #source /contrib/alvaro/ompi/env.sh
 
 # SET RUN DIR (same as #SBATCH --chdir=/path/to/OpenFOAM/case(
 RUN_DIR="${OPENFOAM_SHARED_DIR}/cyclone"
+mkdir -p $RUN_DIR
 cd $RUN_DIR
 
 # REPLACE THE PATH TO THE SIF FILE
@@ -40,15 +41,18 @@ SIF_PATH="${OPENFOAM_SHARED_DIR}/openfoam.sif"
 num_mpi_proc=$NPROCS_MPI
 
 # MESH CASE
-singularity exec ${SIF_PATH} /bin/bash -c "source /opt/openfoam11/etc/bashrc; blockMesh"
-singularity exec ${SIF_PATH} /bin/bash -c "source /opt/openfoam11/etc/bashrc; snappyHexMesh -overwrite"
-singularity exec ${SIF_PATH} /bin/bash -c "source /opt/openfoam11/etc/bashrc; decomposePar"
+echo Running blockMesh...
+singularity exec ${SIF_PATH} /bin/bash -c "source /opt/openfoam11/etc/bashrc; blockMesh" > blockMesh.log
+echo Running snappyHexMesh...
+singularity exec ${SIF_PATH} /bin/bash -c "source /opt/openfoam11/etc/bashrc; snappyHexMesh -overwrite" > snappyHexMesh.log
+echo Running decomposePar...
+singularity exec ${SIF_PATH} /bin/bash -c "source /opt/openfoam11/etc/bashrc; decomposePar" > decomposePar.log
 
 # RUN SIMULATION w/ external MPI
-mpiexec -np ${num_mpi_proc} singularity exec ${SIF_PATH} /bin/bash -c "source /opt/openfoam11/etc/bashrc; foamRun -parallel" > singularity-singlehost-openfoam.out
+#mpiexec -np ${num_mpi_proc} singularity exec ${SIF_PATH} /bin/bash -c "source /opt/openfoam11/etc/bashrc; foamRun -parallel" > singularity-singlehost-openfoam.out
 
 # RUN SIMULATION w/ MPI from container
-#singularity exec ${SIF_PATH} /bin/bash -c "source /opt/openfoam11/etc/bashrc; mpirun -np ${num_mpi_proc} foamRun -parallel"
+singularity exec ${SIF_PATH} /bin/bash -c "source /opt/openfoam11/etc/bashrc; mpirun -np ${num_mpi_proc} --use-hwthread-cpus foamRun -parallel"
 
 # Add a blank .foam file for Paraview
 touch out.foam

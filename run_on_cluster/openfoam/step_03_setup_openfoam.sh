@@ -16,7 +16,6 @@ echo "Setting up OpenFOAM cyclone example..."
 
 # Set working directory and go there
 RUN_DIR=${OPENFOAM_SHARED_DIR}
-mkdir -p ${RUN_DIR}
 cd ${RUN_DIR}
 
 echo "Will work in $RUN_DIR"
